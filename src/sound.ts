@@ -1,5 +1,12 @@
 /** Original, procedural PERAS! score and tactile effects. No audio downloads. */
 export type SoundName = 'click' | 'cut' | 'ice' | 'blend' | 'pour' | 'cash' | 'win' | 'serve' | 'upgrade' | 'bird' | 'error';
+interface SustainedSound {
+  gain: GainNode;
+  sources: (OscillatorNode | AudioBufferSourceNode)[];
+  nodes: AudioNode[];
+}
+interface MotorSound extends SustainedSound { pitches: AudioParam[]; filter: BiquadFilterNode }
+interface PourSound extends SustainedSound { filter: BiquadFilterNode }
 export class Sound {
   enabled = true;
   music = .35;
@@ -10,6 +17,8 @@ export class Sound {
   private timer: ReturnType<typeof setInterval> | null = null;
   private step = 0;
   private nextNote = 0;
+  private motor: MotorSound | null = null;
+  private pouring: PourSound | null = null;
 
   /** Call from a pointer/keyboard gesture. The constructor is silent. */
   async start() {
@@ -26,6 +35,8 @@ export class Sound {
   stop() {
     if (this.timer !== null) clearInterval(this.timer);
     this.timer = null;
+    this.setMotor(false);
+    this.setPour(false);
     if (this.context && this.musicBus) this.musicBus.gain.setTargetAtTime(0, this.context.currentTime, .08);
   }
   setVolumes(music: number, sfx: number, muted = false) {
@@ -47,6 +58,75 @@ export class Sound {
       this.musicBus.connect(this.context.destination); this.effectsBus.connect(this.context.destination); this.updateVolumes();
       return this.context;
     } catch { return null; }
+  }
+  private loopNoise(ctx: AudioContext): AudioBufferSourceNode {
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let index = 0; index < data.length; index++) data[index] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource(); source.buffer = buffer; source.loop = true;
+    return source;
+  }
+  private ramp(parameter: AudioParam, value: number, seconds = .015) {
+    const time = this.context!.currentTime;
+    parameter.cancelScheduledValues(time);
+    parameter.setTargetAtTime(value, time, seconds);
+  }
+  /** Sustained motor follows the real held switch. Repeated frame calls reuse one graph. */
+  setMotor(active: boolean, power = .75) {
+    if (!active || !this.enabled || this.sfx <= 0) {
+      if (this.motor && this.context) this.ramp(this.motor.gain.gain, 0);
+      return;
+    }
+    const ctx = this.ensure(); if (!ctx || !this.effectsBus) return;
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+    const intensity = Number.isFinite(power) ? Math.max(0, Math.min(1, power)) : .75;
+    if (!this.motor) {
+      const gain = ctx.createGain(); gain.gain.value = 0; gain.connect(this.effectsBus);
+      const base = ctx.createOscillator(), harmonic = ctx.createOscillator(), vibration = ctx.createOscillator();
+      base.type = 'sawtooth'; base.frequency.value = 112;
+      harmonic.type = 'triangle'; harmonic.frequency.value = 225;
+      vibration.type = 'sine'; vibration.frequency.value = 8.2;
+      const baseGain = ctx.createGain(), harmonicGain = ctx.createGain(), modulation = ctx.createGain(), noiseGain = ctx.createGain();
+      baseGain.gain.value = .2; harmonicGain.gain.value = .08; modulation.gain.value = 3.4; noiseGain.gain.value = .23;
+      const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1000; filter.Q.value = .6;
+      const noise = this.loopNoise(ctx);
+      base.connect(baseGain); baseGain.connect(gain); harmonic.connect(harmonicGain); harmonicGain.connect(gain);
+      vibration.connect(modulation); modulation.connect(base.frequency); modulation.connect(harmonic.frequency);
+      noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(gain);
+      const sources = [base, harmonic, vibration, noise]; sources.forEach(source => source.start(ctx.currentTime));
+      this.motor = { gain, pitches: [base.frequency, harmonic.frequency], filter, sources,
+        nodes: [gain, base, harmonic, vibration, baseGain, harmonicGain, modulation, filter, noiseGain, noise] };
+    }
+    this.updateVolumes();
+    this.ramp(this.motor.pitches[0], 88 + intensity * 47, .025);
+    this.ramp(this.motor.pitches[1], 177 + intensity * 92, .025);
+    this.ramp(this.motor.filter.frequency, 700 + intensity * 950, .025);
+    this.ramp(this.motor.gain.gain, .48 + intensity * .4);
+  }
+  /** Gentle continuous liquid noise, audible only while the player's pour is flowing. */
+  setPour(active: boolean, intensity = .65) {
+    if (!active || !this.enabled || this.sfx <= 0) {
+      if (this.pouring && this.context) this.ramp(this.pouring.gain.gain, 0, .012);
+      return;
+    }
+    const ctx = this.ensure(); if (!ctx || !this.effectsBus) return;
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+    const level = Number.isFinite(intensity) ? Math.max(0, Math.min(1, intensity)) : .65;
+    if (!this.pouring) {
+      const gain = ctx.createGain(); gain.gain.value = 0; gain.connect(this.effectsBus);
+      const noise = this.loopNoise(ctx), filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 1250; filter.Q.value = .65;
+      const bubble = ctx.createOscillator(), bubblesGain = ctx.createGain(), flutter = ctx.createOscillator(), flutterGain = ctx.createGain();
+      bubble.type = 'sine'; bubble.frequency.value = 280; bubblesGain.gain.value = .025;
+      flutter.type = 'sine'; flutter.frequency.value = 6.4; flutterGain.gain.value = 52;
+      noise.connect(filter); filter.connect(gain);
+      bubble.connect(bubblesGain); bubblesGain.connect(gain); flutter.connect(flutterGain); flutterGain.connect(bubble.frequency);
+      const sources = [noise, bubble, flutter]; sources.forEach(source => source.start(ctx.currentTime));
+      this.pouring = { gain, filter, sources, nodes: [gain, noise, filter, bubble, bubblesGain, flutter, flutterGain] };
+    }
+    this.updateVolumes();
+    this.ramp(this.pouring.filter.frequency, 1050 + level * 950, .025);
+    this.ramp(this.pouring.gain.gain, level * .37, .012);
   }
   private tone(frequency: number, when: number, duration: number, amplitude: number, bus: GainNode, type: OscillatorType = 'sine', endFrequency?: number) {
     const ctx = this.context!; const oscillator = ctx.createOscillator(); const gain = ctx.createGain();
@@ -118,7 +198,13 @@ export class Sound {
     else if (name === 'error') { this.tone(260, when, .15, .2, bus, 'triangle', 190); this.tone(190, when + .16, .22, .15, bus, 'triangle', 140); }
   }
   async dispose() {
-    this.stop(); await this.context?.close().catch(() => undefined); this.context = null; this.musicBus = null; this.effectsBus = null;
+    this.stop();
+    for (const graph of [this.motor, this.pouring]) if (graph) {
+      graph.sources.forEach(source => { try { source.stop(); } catch { /* Already ended by the audio context. */ } });
+      graph.nodes.forEach(node => node.disconnect());
+    }
+    this.motor = null; this.pouring = null;
+    await this.context?.close().catch(() => undefined); this.context = null; this.musicBus = null; this.effectsBus = null;
   }
 }
 export const sound = new Sound();

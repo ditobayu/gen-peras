@@ -1,6 +1,8 @@
-# PERAS!
+# PERAS! — The Hands-On Update
 
-A locally saved, browser-based 3D juice stand game set in a cheerful miniature Indonesian neighborhood. Built with React, TypeScript, Vite, Three.js, and the Web Audio API.
+A locally saved 3D juice stand game in a cheerful miniature Indonesian neighborhood. Version 2 keeps the pastel world and business progression, and replaces timed preparation with direct picking, slicing, dragging, holding, tilting, and serving.
+
+Built with React, TypeScript, Vite, Three.js, and the Web Audio API. The primary camera sits behind the vendor’s shoulder and smoothly approaches the workstation for individual tasks. Free orbit is available in photo mode.
 
 ## Run locally
 
@@ -11,58 +13,94 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. A modern browser with WebGL and hardware acceleration is required. The development server binds to all interfaces for convenient testing on the local network.
+Open the local URL printed by Vite. A modern browser with WebGL and hardware acceleration is required. The development server binds to all interfaces for local network testing.
 
 ```sh
-npm test          # Run the simulation and save/reload tests
+npm test          # Business, preparation, persistence, and audio lifecycle tests
+npx tsc --noEmit  # Type-check the application
 npm run build    # Type-check, bundle, and generate the offline service worker
 npm run preview  # Serve the production build locally
 ```
 
-The production output is in `dist/`. Deploy that directory to a static host at the origin root, with an `index.html` fallback for routes. No application server, API, login, or database is needed.
+Deploy `dist/` to a static host at the origin root, with an `index.html` fallback for routes. No application server, API, login, or database is needed.
 
-## Play
+## Prepare a drink
 
-Open for business, read the customer ticket, select a matching recipe and drink preference, then use the main action button to slice and load, blend, pour, and serve. Preparation is animated in the 3D scene. Correct recipes earn the menu price; matching the preference also earns a perfect-serve tip. The inventory is committed when preparation begins, and an order can receive payment only once.
+Open for business and read the customer ticket. Choose the requested recipe and preference before picking the first fruit. Click the order number to expand the compact ticket.
 
-You start with Rp75.000 and 12 portions of each fruit. Business days last eight minutes of active play; panels, pause, and photo mode stop the day clock. The daily serving goal starts at eight customers and grows with progression. You can also close early using **Close for today**, collect the printed receipt, and begin the next day.
+1. **Pick:** click or tap the highlighted fruit in the 3D stand. Mixed recipes require each listed fruit type. The first accepted pick reserves the recipe’s inventory once.
+2. **Slice:** swipe across the fruit on the cutting board three times. Very short pointer movements do not count. The knife and separated pieces respond to accepted gestures.
+3. **Load:** drag two grouped fruit portions into the open blender jar. Add ice, unless the drink is ice-free, then drag in water or milk. Each requires its own gesture.
+4. **Blend:** hold the blender’s physical switch, watch the mixture and quality indicator, then release. The ideal blend is around 3–4.5 seconds. Releasing before one second lets you continue blending; holding too long produces an overblended result.
+5. **Pour:** hold the jar and drag to control tilt and flow. Aim for 88–98% cup fill, then release. A small partial pour can be continued; releasing once the cup is at least 40% full presents it for serving. Pouring over the rim produces spills and reduces quality.
+6. **Serve:** drag the finished cup toward the customer. The vendor and customer perform the handoff and reaction. Money is credited once at the reaction checkpoint, then the next customer arrives.
 
-Buy fruit at the market, adjust menu prices, customize the vendor, recolor the stand, and purchase equipment or decorations. Upgrades affect the scene and the economy. Recipes, customer preferences, and locations unlock over several days. Occasional heat, rain, shortages, tips, and neighborhood recommendations change demand, purchase prices, cash, or reputation. Customer requests and dialogue use Indonesian.
+Waiting alone does not pick, cut, load, blend, pour, or serve. Blending advances while its switch is held. Liquid flows during pouring, with a brief stream tail after release. Short pickup, cutting, transfer, handoff, and reaction animations respond to accepted input.
+
+Correct recipes earn the menu price. Blend quality, fill, spills, and preference matching determine perfect-serve tips. Incorrect recipes consume their reserved ingredients and earn no payment. Extra-fruit and large-cup preferences reserve additional portions. Completed order IDs prevent duplicate rewards.
+
+## Controls
 
 | Control | Action |
 | --- | --- |
-| Main action button / **Space** | Open the stand or advance preparation |
-| Drag the 3D scene | Orbit the camera |
-| Scroll | Zoom |
+| Click / tap a fruit | Pick an ingredient |
+| Swipe across the cutting board | Make one cut |
+| Drag portions, ice, water, or milk toward the jar | Load ingredients |
+| Hold the blender switch | Blend until released |
+| Hold and drag the jar | Pour and control tilt |
+| Drag the finished cup toward the customer | Serve |
+| **Space** | Open, resume, or perform one assisted pick/cut/load/serve gesture; hold for blending or pouring |
+| **Keyboard & assisted controls** | Show alternative controls; blending/pouring still require a hold and release |
+| Right-drag during play | Peek within the shoulder-camera framing |
+| Scroll during play | Adjust limited zoom |
 | **P** | Enter or exit photo mode |
 | **Esc** | Exit photo mode or close an ordinary panel |
-| Left toolbar | Character, stand upgrades, fruit market, locations, sound, and help |
-| Settings | Pause, music/effect volumes, continue, and confirmed reset |
+| Left toolbar | Character studio, upgrades, market, locations, sound, and help |
+| Settings | Pause, volume controls, continue, and confirmed reset |
 
-In photo mode, right-drag to reframe, choose a lighting preset, optionally freeze ambient animation, and save an actual PNG from the WebGL canvas. The character studio has its own rotating 3D preview. The `/dev/showroom` route provides inspection controls for the character, camera and lighting, and blend/pour previews.
+Pointer gestures support touch. In photo mode, drag to orbit, right-drag to reframe, and scroll or use the zoom controls. Choose a lighting preset, optionally freeze ambient animation, and save an actual PNG from the WebGL canvas. A local postcard preview also provides a download link.
+
+## Your little business
+
+You start with Rp75.000 and 12 portions of each fruit. Days last eight minutes of active play, with a daily serving goal starting at eight customers. Panels, pause, and photo mode stop the day clock. An order already in preparation can finish after closing time. You can close early between orders using **Close for today**, read the receipt, and start the next day.
+
+The existing market, adjustable prices, character customization, stand colors, upgrades, recipes, locations, returning customers, and events remain available. The blender upgrade shortens the hold time needed to reach blend quality. Weather, location, and pricing affect the pause before the next arrival. Shortages, tips, and recommendations can affect purchase prices, money, or reputation. Customer dialogue uses Indonesian. Location variants share the core stand and change scenery and atmosphere.
 
 ## Saves and offline play
 
-Progress is stored only in the current browser's `localStorage`, for the current origin. It includes money, inventory, the vendor's appearance, upgrades, locations, receipts, sound settings, and completed-order IDs. A separate local session record remembers the current order and preparation checkpoint. Refresh resumes the saved business; active visual preparation may restart from a safe checkpoint. Completed orders cannot pay twice, and already reserved ingredients are not deducted again.
+Progress stays in the current browser’s `localStorage`, for the current origin. Business saves include money, inventory, appearance, upgrades, locations, receipts, settings, and completed-order IDs. Preparation checkpoints retain picked fruit, cuts, grouped loads, blend duration, fill, remaining juice, and spills. Checkpoints save on accepted input and periodically during live simulation.
 
-Storage keys are `peras.save.v1`, `peras.session.v1`, and `peras.stand`. Clearing browser/site data removes that browser's progress. Saves are not synchronized across devices. If browser storage is denied or full, the simulation can still run for the current page session.
+Refresh restores progress with held controls released. Existing version-one business saves are preserved. Legacy loaded, blended, and ready checkpoints map to corresponding interactive stages without reserving ingredients twice. Opening another game tab transfers write ownership and pauses the older tab to avoid concurrent progress writes.
 
-The production build creates `dist/sw.js` and registers it after the page loads. After a successful initial visit and service-worker installation, the app shell and local assets are cached for offline use. Service workers require HTTPS, or a localhost origin. The development build does not register a worker.
+Main storage keys are `peras.save.v1`, `peras.session.v1`, and `peras.stand`; tab ownership also uses local markers. Clearing site data removes that browser’s progress. Saves do not sync across devices. If storage is unavailable, play can continue for the current page session.
 
-Gameplay uses no remote API or CDN. Three.js, React, the local fonts, and the rest of the build are served from the same static site. World geometry, character meshes and rigs, fruit, icons, and animations are generated in code. Music and sound effects are synthesized locally using Web Audio; audio starts after interaction.
+The production build generates `dist/sw.js` and registers it after loading. After a successful initial visit and service-worker installation, the app shell and local assets are cached for offline use. Service workers require HTTPS, or localhost. Development builds do not register a worker. Offline play requires the initial installation and cache fill to have completed.
+
+Gameplay uses no remote API or CDN. React, Three.js, fonts, and build assets come from the same static site. World geometry, character rigs, fruit, icons, and animations are generated locally in code. Music and effects use original procedural Web Audio. Sustained motor and pour sounds follow held controls and fade on release; audio starts after interaction.
+
+## Development inspection
+
+With the development server running, open `/dev/gameplay-lab`. This development-only view uses the same preparation reducer and scene interaction code, with a recipe selector, camera presets, slow motion, interaction reset, live preparation values, character studio, and free camera/lighting controls. Lab simulation and checkpoint writes are isolated from the saved business.
+
+**Replay last gesture** restores the preparation snapshot from the latest recorded interaction and reapplies its reducer input; held interactions can also replay their recorded duration. This is an interaction replay for inspection rather than a video recording. **Motion frames** displays actual WebGL stills captured during representative cutting, blending, pouring, handoff, and reaction moments. Perform the interactions to populate the frame gallery; the images come from the running scene.
 
 ## Source layout
 
 | File | Responsibility |
 | --- | --- |
-| `src/main.tsx` | React interface, customer session, preparation stages, day timers, panels, and photo controls |
-| `src/engine.ts` | Immutable business simulation, recipes, orders, ingredient reservations, costs, upgrades, events, and versioned persistence |
-| `src/GameScene.tsx` | Three.js renderer, camera, lighting, character/prop interactions, scene updates, and PNG capture |
-| `src/characters.ts` | Procedural skinned character rig, organic mesh surfaces, face/hair/clothing customization, bone animation, and hand reach |
-| `src/world.ts` | Cart, blender, fruit, preparation effects, environmental props, location variations, and visible upgrades |
-| `src/sound.ts` | Original procedural marimba score and sound effects |
-| `src/icons.tsx` / `src/style.css` | Local illustrated interface assets and responsive styling |
-| `scripts/test-engine.mjs` | Runs the shipped engine through inventory, economy, progression, corruption recovery, and save/replay tests |
-| `scripts/offline.mjs` | Generates the production asset cache and service worker |
+| `src/main.tsx` | React entry point and production service-worker registration |
+| `src/App.tsx` | Interface, session coordination, reservation, payment, timers, assisted controls, and lab |
+| `src/preparation.ts` | Pure input reducer, held-control simulation, quality, liquid conservation, serialization, and legacy checkpoint recovery |
+| `src/interaction.ts` | Raycasting, captured drags, swipes, target projection, and cancellation |
+| `src/engine.ts` | Immutable economy, recipes, inventory, upgrades, events, receipts, and business persistence |
+| `src/GameScene.tsx` | Shoulder camera, contextual framing, gestures, hand/object interaction, lighting, and PNG capture |
+| `src/characters.ts` | Procedural skinned rig, customization, animation, expressions, grips, and hand reach |
+| `src/world.ts` | Stand, fruit, cut/load states, blender contents, vortex, stream, cup fill, spills, scenery, and upgrades |
+| `src/sound.ts` | Procedural music, tactile effects, and sustained held motor/pour audio |
+| `src/icons.tsx` / `src/style.css` | Local illustrated interface assets and styling |
+| `scripts/test-engine.mjs` | Inventory, economy, progression, persistence, and payout replay tests |
+| `scripts/test-preparation.mjs` | Gesture gates, holds, partial pours, quality, conservation, migration, and reaction checkpoints |
+| `scripts/test-sound.mjs` | Audio graph reuse, release envelopes, volume/mute, and cleanup; tests lifecycle rather than perceived sound quality |
+| `scripts/offline.mjs` | Production asset cache and service-worker generation |
 
-Characters use a code-generated skeleton and skinned geometry with procedural animation. The juice vortex, pouring stream, and splashes are authored visual effects. Locations share the same core stand and use different scenery and atmosphere. These are deliberate, inspectable implementations; the project does not depend on downloaded character models or physical fluid simulation.
+Characters use a code-generated skeleton, skinned geometry, and procedural animation. Fruit separation, the vortex, stream, and splashes use authored visual effects rather than physical fluid simulation. The project needs no downloaded character models or online gameplay services.
