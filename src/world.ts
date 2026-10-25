@@ -15,6 +15,11 @@ function bar(p:THREE.Object3D,a:THREE.Vector3,b:THREE.Vector3,r:number,c:string)
 function leaf(p:THREE.Object3D,x:number,y:number,z:number,size:number,color:string,rz=0,rx=0) {const o=ball(p,x,y,z,size*.25,size,size*.055,color,10);o.rotation.set(rx,0,rz);return o;}
 function canvasTexture(w:number,h:number,draw:(ctx:CanvasRenderingContext2D)=>void) {const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d')!;draw(ctx);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;}
 function label(p:THREE.Object3D,text:string,w:number,h:number,x:number,y:number,z:number,fg=C.dark,bg=C.cream,font=90) {const t=canvasTexture(768,256,c=>{c.fillStyle=bg;c.fillRect(0,0,768,256);c.fillStyle=fg;c.textAlign='center';c.textBaseline='middle';c.font=`900 ${font}px Arial, sans-serif`;c.fillText(text,384,137,710);});return mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,roughness:.9}),p,x,y,z);}
+function topOutline(p:THREE.Object3D,w:number,d:number,color:string,thickness=.012) {
+  const x=w*.5,z=d*.5,r=Math.min(.055,w*.15,d*.15);
+  const points=[[-x+r,-z],[x-r,-z],[x,-z+r],[x,z-r],[x-r,z],[-x+r,z],[-x,z-r],[-x,-z+r],[-x+r,-z]].map(([xx,zz])=>new THREE.Vector3(xx,0,zz));
+  const o=line(p,points,thickness,color);o.material=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.8,depthWrite:false});o.castShadow=false;o.receiveShadow=false;return o;
+}
 function seeded(i:number) {return (Math.sin(i*127.1+311.7)*43758.5453)%1;}
 function rand(i:number) {return Math.abs(seeded(i));}
 let skinTexture:THREE.CanvasTexture|undefined;
@@ -209,10 +214,20 @@ export function createWorld() {
   mesh(new THREE.PlaneGeometry(1.95,.59),new THREE.MeshStandardMaterial({map:logoTex,roughness:1}),logo,0,0,.108);
   const backLogo=mesh(new THREE.PlaneGeometry(1.95,.59),new THREE.MeshStandardMaterial({map:logoTex,roughness:1}),logo,0,0,-.071);backLogo.rotation.y=Math.PI;
   pennants(stand);
-  // Produce: little woven crates, one of every recipe fruit, and paper price tags.
+  // Two shallow rows keep every source visible from behind the counter.
   const fruitDisplays=new Map<string,THREE.Group>();
   const fruitIds=['mango','avocado','orange','watermelon','strawberry','guava','banana','pineapple'];
-  fruitIds.forEach((id,i)=>{const tray=new THREE.Group();stand.add(tray);tray.position.set(-1.96+i*.55,1.34,1.17);fruitDisplays.set(id,tray);box(tray,0,.025,0,.49,.05,.32,'#bd925f',.035);for(const side of [-1,1])box(tray,side*.245,.065,0,.025,.09,.32,'#d9b77d',.008);box(tray,0,.06,.155,.48,.08,.025,'#d9b77d',.008);const fruit=createFruit(id,id==='pineapple'?.105:id==='banana'?.12:.125);fruit.position.set(0,.16,0);fruit.rotation.y=.2+i*.6;tray.add(fruit);const tag=label(tray,id==='pineapple'?'NANAS':id==='watermelon'?'SEMANGKA':id==='strawberry'?'STROBERI':id==='avocado'?'ALPUKAT':id==='orange'?'JERUK':id==='mango'?'MANGGA':id==='guava'?'JAMBU':'PISANG',.41,.105,0,.065,-.173,C.dark,'#fff0ce',62);tag.rotation.y=Math.PI;});
+  const fruitNames:Record<string,string>={mango:'MANGGA',avocado:'ALPUKAT',orange:'JERUK',watermelon:'SEMANGKA',strawberry:'STROBERI',guava:'JAMBU',banana:'PISANG',pineapple:'NANAS'};
+  box(stand,-1.34,1.37,1.18,2.1,.11,.44,'#b88b57',.035);
+  fruitIds.forEach((id,i)=>{
+    const row=Math.floor(i/4),tray=new THREE.Group();stand.add(tray);tray.name=`ingredient-source-${id}`;tray.position.set(-2.12+(i%4)*.53,1.34+row*.12,.77+row*.43);fruitDisplays.set(id,tray);
+    box(tray,0,.026,0,.49,.052,.37,'#bd925f',.035);box(tray,0,.056,0,.446,.014,.326,'#f2deb0',.02);
+    for(const side of [-1,1])box(tray,side*.239,.095,0,.025,.11,.37,'#dfbd82',.008);
+    box(tray,0,.08,.177,.48,.08,.024,'#d3aa70',.008);
+    const fruit=createFruit(id,id==='pineapple'?.115:id==='banana'?.13:.139);fruit.position.set(-.033,.185,.015);fruit.rotation.y=id==='avocado'||id==='guava'?Math.PI:.2+i*.3;tray.add(fruit);
+    if(!['banana','pineapple','watermelon'].includes(id)){const second=createFruit(id,.081);second.position.set(.133,.125,-.055);second.rotation.y=Math.PI-.3;tray.add(second);}
+    const tag=label(tray,fruitNames[id],.46,.118,0,.105,-.195,C.dark,'#fff5d9',64);tag.rotation.y=Math.PI;
+  });
   const produce=new THREE.Group();stand.add(produce);produce.position.set(-3.05,.04,-.2);produce.rotation.y=.16;
   box(produce,0,.47,0,1.05,.8,.85,'#c7975d');for(let i=0;i<5;i++)box(produce,-.42+i*.21,.49,.44,.18,.76,.03,'#d9b17a',.01);
   basket(produce,0,.88,0,'pineapple',.93);basket(produce,.03,.13,.93,'watermelon',.85);basket(produce,-.04,.05,-.88,'dragonfruit',.85);
@@ -229,6 +244,10 @@ export function createWorld() {
   const glass=new THREE.MeshPhysicalMaterial({color:'#f1f7df',transparent:true,opacity:.27,roughness:.035,metalness:.015,transmission:.42,thickness:.035,ior:1.45,side:THREE.DoubleSide,depthWrite:false});
   mesh(new THREE.CylinderGeometry(.22,.17,.61,24,1,true),glass,jar,0,.32,0);cyl(jar,0,.035,0,.175,.175,.07,'#c5cfac');
   const rim=mesh(new THREE.TorusGeometry(.22,.018,6,24),mat('#cbd7b9'),jar,0,.625,0);rim.rotation.x=Math.PI/2;
+  const jarDropRing=mesh(new THREE.TorusGeometry(.249,.018,8,40),new THREE.MeshBasicMaterial({color:'#c9df8b',transparent:true,opacity:.85,depthWrite:false}),jar,0,.665,0);jarDropRing.rotation.x=Math.PI/2;jarDropRing.castShadow=false;
+  const dropArrow=new THREE.Group();jar.add(dropArrow);dropArrow.position.y=.86;
+  cyl(dropArrow,0,.025,0,.012,.012,.115,'#c9df8b',10);const arrowTip=mesh(new THREE.ConeGeometry(.045,.065,3),mat('#c9df8b'),dropArrow,0,-.057,0);arrowTip.rotation.z=Math.PI;
+
   line(jar,[new THREE.Vector3(.2,.5,0),new THREE.Vector3(.37,.5,0),new THREE.Vector3(.4,.37,0),new THREE.Vector3(.37,.19,0),new THREE.Vector3(.2,.15,0)],.034,'#a7baa2');
   const spoutGeo=new THREE.BufferGeometry();spoutGeo.setAttribute('position',new THREE.Float32BufferAttribute([.17,.625,-.075,.32,.63,0,.17,.625,.075,.17,.625,-.075,.21,.665,-.065,.32,.63,0,.17,.625,.075,.32,.63,0,.21,.665,.065],3));spoutGeo.computeVertexNormals();mesh(spoutGeo,glass,jar);
   for(let j=0;j<5;j++){box(jar,-.1,.16+j*.085,-.175,.052,.009,.006,'#7d947d',.002);}
@@ -248,6 +267,10 @@ export function createWorld() {
   const cup=new THREE.Group();stand.add(cup);cup.position.set(1.5,1.33,.75);cup.name='serving-cup';
   mesh(new THREE.CylinderGeometry(.155,.115,.43,24,1,true),new THREE.MeshPhysicalMaterial({color:'#fff9e2',transparent:true,opacity:.38,roughness:.16,depthWrite:false,side:THREE.DoubleSide}),cup,0,.215,0);
   const cupRim=mesh(new THREE.TorusGeometry(.154,.013,7,24),mat('#fff5da'),cup,0,.432,0);cupRim.rotation.x=Math.PI/2;
+  const fillMark=mesh(new THREE.TorusGeometry(.15,.006,5,32),mat('#75a45a'),cup,0,.375,0);fillMark.rotation.x=Math.PI/2;
+  const cupCoaster=new THREE.Group();stand.add(cupCoaster);cupCoaster.position.set(1.5,1.329,.75);cyl(cupCoaster,0,.004,0,.235,.235,.012,'#d9dfb2',32);topOutline(cupCoaster,.48,.48,'#7fa16a',.009);
+  const cupTag=label(cupCoaster,'GELAS',.35,.10,0,.04,-.275,C.dark,'#fff5d9',90);cupTag.rotation.y=Math.PI;
+
   cyl(cup,0,.018,0,.116,.116,.035,'#f8edcf');
   const cupLiquid=mesh(new THREE.CylinderGeometry(.14,.108,.37,24),mat('#f0ba50',.33),cup,0,.2,0);cupLiquid.visible=false;
   label(cup,'P!',.2,.16,0,.24,.14,C.dark,C.cream,150);
@@ -260,6 +283,10 @@ export function createWorld() {
   const spillDrops=new THREE.Group();spill.add(spillDrops);for(let i=0;i<12;i++)ball(spillDrops,0,0,0,.015,.022,.015,'#f0ba50',7);spill.visible=false;
   // A cutting board, freshly sliced citrus, real blade, and cloth towel.
   const cuttingBoard=box(stand,-.5,1.355,.65,.82,.06,.55,'#c4955d',.075);cuttingBoard.material=woodMaterial.clone();(cuttingBoard.material as THREE.MeshStandardMaterial).color.set('#ceaa75');
+  const boardDropFrame=new THREE.Group();stand.add(boardDropFrame);boardDropFrame.position.set(-.5,1.391,.65);const boardOutline=topOutline(boardDropFrame,.79,.52,'#f3db81',.012);
+  const boardTag=label(boardDropFrame,'TALENAN',.55,.105,0,-.012,-.305,C.dark,'#fff5d9',80);boardTag.rotation.y=Math.PI;
+  const boardGrip=cyl(stand,-.962,1.355,.65,.065,.065,.045,'#c4955d',16);boardGrip.rotation.z=Math.PI/2;
+
   const boardContent=new THREE.Group();stand.add(boardContent);boardContent.position.set(-.5,1.405,.65);
   const boardWhole=new THREE.Group(),boardChunks=new THREE.Group();boardContent.add(boardWhole,boardChunks);
   const knifeRig=new THREE.Group();stand.add(knifeRig);knifeRig.position.set(-.12,1.414,.45);knifeRig.rotation.x=Math.PI/2;
@@ -270,7 +297,12 @@ export function createWorld() {
   const register=new THREE.Group();stand.add(register);register.position.set(2.12,1.33,.25);register.rotation.y=Math.PI;box(register,0,.09,0,.43,.18,.37,'#577a60',.055);const scr=box(register,0,.28,-.05,.35,.27,.06,'#3f5e4d',.03);scr.rotation.x=-.2;const screen=label(register,'Rp 15.000',.29,.15,0,.295,-.006,'#cbe1a7','#3b5848',70);screen.rotation.x=-.2;for(let j=0;j<3;j++)for(let i=0;i<3;i++)box(register,-.1+i*.1,.193,.08+j*.05,.06,.018,.035,'#d2d3b0',.006);
   cyl(stand,2.34,1.45,.7,.065,.06,.24,'#d6b57a');for(let i=0;i<3;i++){const o=cyl(stand,2.31+i*.027,1.61,.7,.008,.008,.27,['#73985b','#dba06a','#6c8e78'][i],6);o.rotation.z=(i-1)*.15;}
   box(stand,1.8,1.39,.12,.25,.12,.22,'#f5ebcf',.025);for(let i=0;i<3;i++)box(stand,1.8,1.45+i*.012,.12,.23,.006,.2,'#fff5df',.001);
-  const iceBucket=new THREE.Group();stand.add(iceBucket);iceBucket.position.set(-1.92,1.33,.45);cyl(iceBucket,0,.16,0,.2,.15,.32,'#b3c8b3');cyl(iceBucket,0,.33,0,.19,.19,.02,'#dbe4cd');for(let i=0;i<7;i++){const ice=box(iceBucket,(rand(i+54)-.5)*.24,.34+rand(i)*.04,(rand(i+15)-.5)*.24,.085,.07,.08,'#e5f0dc',.02);ice.material=iceMaterial;ice.rotation.y=i;}const iceTag=label(iceBucket,'ES',.2,.105,0,.16,-.184,C.dark,C.cream,120);iceTag.rotation.y=Math.PI;
+  const iceBucket=new THREE.Group();stand.add(iceBucket);iceBucket.position.set(-1.92,1.33,.45);cyl(iceBucket,0,.16,0,.2,.15,.32,'#b3c8b3');cyl(iceBucket,0,.318,0,.183,.183,.018,'#829e91');
+  const iceRim=mesh(new THREE.TorusGeometry(.195,.018,7,24),mat('#e0e9d4'),iceBucket,0,.33,0);iceRim.rotation.x=Math.PI/2;
+  for(let i=0;i<7;i++){const ice=box(iceBucket,(rand(i+54)-.5)*.24,.34+rand(i)*.04,(rand(i+15)-.5)*.24,.085,.07,.08,'#e5f0dc',.02);ice.material=iceMaterial;ice.rotation.y=i;}
+  const iceTag=label(iceBucket,'ES BATU',.31,.115,0,.175,-.197,C.dark,C.cream,80);iceTag.rotation.y=Math.PI;
+  const scoop=new THREE.Group();iceBucket.add(scoop);scoop.position.set(.15,.37,.045);scoop.rotation.z=-.45;ball(scoop,0,0,0,.062,.024,.085,'#d8e0cd',12);bar(scoop,new THREE.Vector3(0,0,0),new THREE.Vector3(0,.19,.015),.018,'#758e7c');
+
   const liquids=new Map<string,THREE.Group>();for(const [id,x,color] of [['water',-1.53,'#c7dccc'],['milk',-1.15,'#f0e6c8']] as const){const b=new THREE.Group();stand.add(b);b.position.set(x,1.33,.2);liquids.set(id,b);cyl(b,0,.19,0,.108,.116,.38,color,20);cyl(b,0,.415,0,.052,.1,.07,color,16);cyl(b,0,.465,0,.06,.06,.04,id==='milk'?'#d9ac71':'#83a28b',16);const tag=label(b,id==='water'?'AIR':'SUSU',.17,.15,0,.22,-.115,C.dark,'#fff1cf',72);tag.rotation.y=Math.PI;}
   const cooler=new THREE.Group();stand.add(cooler);cooler.position.set(3.02,.06,-.58);box(cooler,0,.35,0,.83,.69,.67,'#94b69a',.1);box(cooler,0,.72,0,.89,.14,.72,'#e6e4c4',.06);box(cooler,0,.43,.36,.22,.15,.035,'#eef0cf',.025);label(cooler,'ICE • ES',.5,.2,0,.3,.344,C.dark,'#bad0aa',85);bar(cooler,new THREE.Vector3(-.44,.5,-.18),new THREE.Vector3(-.44,.5,.18),.035,'#698e72');
   // The freestanding chalk menu has little drawings and hand-lettered specials.
@@ -328,6 +360,9 @@ export function createWorld() {
   label(festival,'P E S T A   B U A H',2.8,.37,0,4.81,-1.69,'#fff0cb','#829b68',84);
   for(const location of locations.values())compactDecoration(location);
   for(const display of fruitDisplays.values())compactDecoration(display);
+  const sourceOutlines=new Map<string,THREE.Mesh>();
+  for(const [id,display] of fruitDisplays){const outline=topOutline(display,.48,.36,'#eac45a',.01);outline.position.y=.069;outline.visible=false;sourceOutlines.set(id,outline);}
+
   const targets:Record<string,THREE.Object3D>={};
   const hitMaterial=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false,side:THREE.DoubleSide});
   function target(id:string,parent:THREE.Object3D,x:number,y:number,z:number,w:number,h:number,d:number){const o=mesh(new THREE.BoxGeometry(w,h,d),hitMaterial,parent,x,y,z);o.name=id;o.userData.targetId=id;o.userData.interactionId=id;o.castShadow=false;o.receiveShadow=false;targets[id]=o;return o;}
@@ -340,11 +375,11 @@ export function createWorld() {
   // A single coordinate frame keeps every tool, hit target and grip coherent
   // as the workstation is brought within the vendor's natural arm reach.
   const workGroup=new THREE.Group();workGroup.name='reachable-workstation';stand.add(workGroup);
-  workGroup.add(cuttingBoard,boardContent,knifeRig,blender,cup,iceBucket,premium,...liquids.values());workGroup.position.z=-.38;
+  workGroup.add(cuttingBoard,boardGrip,boardDropFrame,boardContent,knifeRig,blender,cup,cupCoaster,iceBucket,premium,...liquids.values());workGroup.position.z=-.38;
   box(stand,-1.67,1.19,-.24,1.35,.2,.5,'#e9bb78',.065);const ingredientLedge=box(stand,-1.67,1.302,-.24,1.35,.035,.5,'#efd09a',.025);ingredientLedge.material=woodMaterial;
   // Bake the hundreds of little carved details into material batches. Animated
   // pieces and painted surfaces stay separate, so the miniature is cheap to draw.
-  const keep=new Set<THREE.Object3D>([ground,blender,cup,pourStream,bird,boardContent,knifeRig,spill,dragVisual,ingredientStream,iceBucket,...liquids.values(),...fruitDisplays.values(),...animatedLeaves,...changeable,...upgrades.values(),...locations.values()]);
+  const keep=new Set<THREE.Object3D>([ground,blender,cup,boardDropFrame,cupCoaster,pourStream,bird,boardContent,knifeRig,spill,dragVisual,ingredientStream,iceBucket,...liquids.values(),...fruitDisplays.values(),...animatedLeaves,...changeable,...upgrades.values(),...locations.values()]);
   group.updateMatrixWorld(true);
   const batches=new Map<string,{material:THREE.Material,geometries:THREE.BufferGeometry[],originals:THREE.Mesh[]}>();
   group.traverse(o=>{if(!(o instanceof THREE.Mesh)||Array.isArray(o.material))return;let ancestor:THREE.Object3D|null=o;while(ancestor){if(keep.has(ancestor))return;ancestor=ancestor.parent;}if(o.material.transparent)return;
@@ -353,7 +388,8 @@ export function createWorld() {
   });
   for(const batch of batches.values()){if(batch.geometries.length<2){batch.geometries.forEach(g=>g.dispose());continue;}const geometry=mergeGeometries(batch.geometries,false);if(geometry){const baked=mesh(geometry,batch.material,group);baked.name='handcrafted-details';for(const o of batch.originals)o.removeFromParent();}batch.geometries.forEach(g=>g.dispose());}
   let lastStage='';let currentLocation='gang';let currentFruit='';let currentFruitIds=['orange'];
-  let dragId:string|null=null,lastDragId:string|null=null,dragPosition:THREE.Vector3|null=null,lastDragPosition:THREE.Vector3|null=null,dragKind='';
+  let dragId:string|null=null,dragPosition:THREE.Vector3|null=null,dragKind='';
+  const releasedDragOrigins=new Map<string,THREE.Vector3>();
   const colorFruit:Record<string,string>={'#ffb746':'mango','#bed583':'avocado','#ffa342':'orange','#f77989':'watermelon','#ec88a0':'strawberry','#f0a3a4':'guava','#efda9a':'banana','#ffc163':'pineapple'};
   function refreshFruit(id:string,color:string,ids=[id]) {
     currentFruitIds=ids;currentFruit=ids.join('|');boardWhole.clear();boardChunks.clear();fruitPieces.clear();
@@ -365,17 +401,20 @@ export function createWorld() {
     dragKind='';
   }
   function populateDrag(kind:string,color:string){if(dragKind===kind)return;dragKind=kind;dragVisual.clear();
-    if(kind==='portions'){for(let i=0;i<4;i++){const f=cutFruit(currentFruitIds[i%currentFruitIds.length],.13,color);f.position.set((i%2-.5)*.13,(Math.floor(i/2))*.075,(Math.floor(i/2)-.5)*.13);f.rotation.y=i*.8;dragVisual.add(f);}}
+    if(kind.startsWith('fruit-')){const fruit=createFruit(kind.slice(6),.19);fruit.rotation.y=Math.PI;dragVisual.add(fruit);}
+    else if(kind==='portions'){for(let i=0;i<4;i++){const f=cutFruit(currentFruitIds[i%currentFruitIds.length],.13,color);f.position.set((i%2-.5)*.13,(Math.floor(i/2))*.075,(Math.floor(i/2)-.5)*.13);f.rotation.y=i*.8;dragVisual.add(f);}}
     else if(kind==='ice'){for(let i=0;i<3;i++){const cube=box(dragVisual,(i-1)*.07,i%2*.07,0,.08,.08,.08,'#e7f0df',.015);cube.material=iceMaterial;cube.rotation.set(i,.5*i,.3*i);}}
-    else {const color=kind==='milk'?'#f0e6c8':'#c7dccc';cyl(dragVisual,0,.12,0,.075,.08,.25,color,16);cyl(dragVisual,0,.27,0,.035,.065,.05,color,12);cyl(dragVisual,0,.31,0,.04,.04,.035,kind==='milk'?'#d9ac71':'#83a28b',12);}
+    else {const source=liquids.get(kind);if(source){const bottle=source.clone(true);bottle.position.set(0,0,0);bottle.visible=true;bottle.traverse(o=>{if(o.userData.targetId)o.visible=false;});dragVisual.add(bottle);}}
   }
   function setDrag(id:string|null,position:THREE.Vector3|null){
-    if(position){dragPosition=position.clone();lastDragPosition=position.clone();}
-    if(!id){dragPosition=null;dragId=null;return;}
-    dragId=id==='portion'?'portions':id;lastDragId=dragId;
+    if(position)dragPosition=position.clone();
+    if(!id){if(dragId&&dragPosition)releasedDragOrigins.set(dragId,dragPosition.clone());dragPosition=null;dragId=null;return;}
+    dragId=id==='portion'?'portions':id;
   }
   function update(time:number,stage='idle',progress=0,color='#f4bc50',fruitId?:string) {
     const filling=Math.min(1,Math.max(0,progress));
+    jarDropRing.visible=false;dropArrow.visible=false;boardOutline.visible=false;for(const outline of sourceOutlines.values())outline.visible=false;
+
     const selectedFruit=fruitId==='tropical'?'pineapple':fruitId||colorFruit[color.toLowerCase()]||'orange';if(selectedFruit!==currentFruit)refreshFruit(selectedFruit,color);
     for(let i=0;i<animatedLeaves.length;i++)animatedLeaves[i].rotation.z=Math.sin(time*.55+i)*.009;
     bird.rotation.y=Math.sin(time*.45)*.24;
@@ -428,15 +467,20 @@ export function createWorld() {
     if(stage==='done')cup.position.set(.15,1.4,2.02);
     liquidSurface.visible=liquid.visible;liquidSurface.position.y=.05+.44*liquid.scale.y;jarIce.visible=false;jarFoam.visible=false;cupFoam.visible=cupLiquid.visible;cupFoam.position.y=.025+.37*cupLiquid.scale.y;spill.visible=false;cuttingGuide.visible=false;dragVisual.visible=false;ingredientStream.visible=false;
   }
-  let previousHandsTime=0,vortexEnergy=0,jarLift=0,jarTilt=0;
+  let previousHandsTime=0,vortexEnergy=0,motorAngle=0,jarLift=0,jarTilt=0;
   const finalJuice=new THREE.Color(),liquidTint=new THREE.Color(),sourceTint=new THREE.Color();
   function updateHandsOn(time:number,state:PrepState,color:string,fruitId:string,modifier:string) {
     const dt=Math.min(.05,Math.max(0,time-previousHandsTime));previousHandsTime=time;
     const phase=state.phase,ids=state.selectedFruits.length?state.selectedFruits:[fruitId==='tropical'?'pineapple':fruitId];
+    const pulse=.5+.5*Math.sin(time*3.1);
+    for(const [id,outline] of sourceOutlines){outline.visible=phase==='select'&&state.requiredFruits.includes(id)&&!state.selectedFruits.includes(id);(outline.material as THREE.MeshBasicMaterial).opacity=.55+pulse*.3;outline.scale.setScalar(1+pulse*.022);}
+    boardOutline.visible=['select','cut','load'].includes(phase);(boardOutline.material as THREE.MeshBasicMaterial).color.set(phase==='select'?'#c9df8b':phase==='cut'?'#fff1c4':'#efca68');(boardOutline.material as THREE.MeshBasicMaterial).opacity=dragId?.startsWith('fruit-')?.95:.47+pulse*.17;
+    jarDropRing.visible=phase==='load';(jarDropRing.material as THREE.MeshBasicMaterial).opacity=dragId?.92:.48+pulse*.25;jarDropRing.scale.setScalar(1+pulse*.035);
+    dropArrow.visible=phase==='load';dropArrow.position.y=.84+pulse*.045;dropArrow.scale.setScalar(dragId?1:.8);
+
     const fruitKey=ids.join('|');if(currentFruit!==fruitKey)refreshFruit(ids[0],color,ids);
     for(let i=0;i<animatedLeaves.length;i++)animatedLeaves[i].rotation.z=Math.sin(time*.55+i)*.009;
     bird.rotation.y=Math.sin(time*.45)*.24;
-    if(phase==='select'&&!state.selectedFruits.length){dragId=null;dragPosition=null;lastDragPosition=null;}
     const sliceActive=state.lastAction==='slice'&&state.actionAge<.36;
     const cutCount=Math.max(0,state.cuts-(sliceActive&&state.gesture<.48?1:0));
     const cutPieces=Math.floor(cutCount/state.cutsRequired*8);
@@ -446,12 +490,17 @@ export function createWorld() {
     boardWhole.scale.set(1-cutCount*.25,1,1);boardWhole.position.x=-cutCount*.035;
     cuttingGuide.visible=phase==='cut';cuttingGuide.position.x=.16-cutCount*.14;
     knifeRig.position.set(-.04,1.415,.43);knifeRig.rotation.set(Math.PI/2,0,-.2);
-    if(sliceActive){const g=state.gesture;knifeRig.rotation.set(0,0,-.05);knifeRig.position.set(-.62+(state.cuts-1)*.11,1.415+Math.abs(g-.5)*.42,.46+g*.33);}
+    if(sliceActive){
+      const g=state.gesture,raise=THREE.MathUtils.smoothstep(g,0,.25),strike=THREE.MathUtils.smoothstep(g,.25,.6),recover=THREE.MathUtils.smoothstep(g,.7,1);
+      knifeRig.rotation.set(Math.PI/2*recover,0,-.28+strike*.34-recover*.26);
+      knifeRig.position.set(THREE.MathUtils.lerp(-.62+(state.cuts-1)*.11,-.04,recover),1.415+(raise-strike)*.24+Math.sin(recover*Math.PI)*.035,THREE.MathUtils.lerp(.46+strike*.18,.43,recover));
+    }
+
     for(let i=0;i<boardChunks.children.length;i++){
       const piece=boardChunks.children[i];piece.visible=i<cutPieces&&i>=state.loadedPortions*4;
       if(dragId==='portions'&&i>=state.loadedPortions*4&&i<(state.loadedPortions+1)*4)piece.visible=false;
-      piece.position.set((i%4-1.5)*.15,.055,(Math.floor(i/4)-.5)*.17);
-      if(sliceActive&&i>=Math.floor(Math.max(0,cutCount-1)/3*8)){const bounce=Math.sin(Math.max(0,state.gesture-.45)/.55*Math.PI)*.025;piece.position.y+=Math.max(0,bounce);piece.position.x+=Math.sin(i*2.4)*Math.max(0,bounce);}
+      piece.position.set((i%4-1.5)*.15,.055,(Math.floor(i/4)-.5)*.17);piece.rotation.z=0;
+      if(sliceActive&&i>=Math.floor(Math.max(0,cutCount-1)/3*8)){const bounce=Math.sin(THREE.MathUtils.clamp((state.gesture-.42)/.58,0,1)*Math.PI)*.035;piece.position.y+=bounce;piece.position.x+=Math.sin(i*2.4)*bounce;piece.rotation.z=Math.sin(i*1.8)*bounce*.8;}
     }
     // No animation here changes the preparation result: these poses render input state.
     const transferActive=state.lastAction==='load'&&state.transfer<1;
@@ -459,8 +508,8 @@ export function createWorld() {
     const smoothness=THREE.MathUtils.clamp(state.blendSeconds/3.15,0,1);
     const holdingBlend=phase==='blend'&&state.blendHeld;
     vortexEnergy=THREE.MathUtils.damp(vortexEnergy,holdingBlend?1:0,holdingBlend?10:5,dt);
-    blades.rotation.y=state.blendSeconds*44;controlKnob.rotation.z=holdingBlend?-1.1:0;
-    blender.rotation.z=holdingBlend?Math.sin(time*76)*.006:0;
+    motorAngle+=dt*vortexEnergy*44;blades.rotation.y=motorAngle;controlKnob.rotation.z=THREE.MathUtils.damp(controlKnob.rotation.z,holdingBlend?-1.1:0,18,dt);
+    blender.rotation.z=Math.sin(time*76)*.006*vortexEnergy;
     blender.position.set(.65,1.33,.75);
     jarTilt=THREE.MathUtils.damp(jarTilt,phase==='pour'?state.tilt:0,20,dt);
     if(jarTilt<.0001)jarTilt=0;
@@ -476,9 +525,9 @@ export function createWorld() {
       f.visible=i<settled*4;f.scale.setScalar(1-smoothness*.94);f.position.copy(targetPos);f.rotation.set(i,.4*i,i*.7);
       if(transferActive&&i>=settled*4&&i<state.loadedPortions*4){
         f.visible=true;const p=THREE.MathUtils.clamp((state.transfer-(i%4)*.045)/.86,0,1);
-        const start=lastDragPosition&&lastDragId==='portions'?jar.worldToLocal(lastDragPosition.clone()):jar.worldToLocal(boardContent.localToWorld(new THREE.Vector3(0,.11,0)));
+        const start=releasedDragOrigins.has('portions')?jar.worldToLocal(releasedDragOrigins.get('portions')!.clone()):jar.worldToLocal(boardContent.localToWorld(new THREE.Vector3(0,.11,0)));
         const opening=new THREE.Vector3((i%2-.5)*.08,.8,(Math.floor(i%4/2)-.5)*.08);
-        if(p<.55){const q=p/.55;f.position.copy(start).lerp(opening,q);f.position.y+=Math.sin(q*Math.PI)*.16;}else f.position.copy(opening).lerp(targetPos,(p-.55)/.45);
+        if(p<.55){const q=THREE.MathUtils.smoothstep(p,0,.55);f.position.copy(start).lerp(opening,q);f.position.y+=Math.sin(q*Math.PI)*.16;}else {const q=THREE.MathUtils.smoothstep(p,.55,1);f.position.copy(opening).lerp(targetPos,q);f.position.y+=Math.sin(q*Math.PI)*.045;}
         f.rotation.set(p*4+i,p*3+i,p*2+i);
       } else if(state.blendSeconds>0&&i<state.loadedPortions*4){
         const a=state.blendSeconds*(8+i*.31)+i*2.4,r=.05+rand(i)*.09;f.position.set(Math.cos(a)*r,.13+((state.blendSeconds*.19+i*.06)%.27)*state.remaining,Math.sin(a)*r);f.rotation.set(state.blendSeconds*6+i,state.blendSeconds*4+i,state.blendSeconds*5);
@@ -504,18 +553,20 @@ export function createWorld() {
     jarFoam.visible=state.liquidAdded&&smoothness>.22&&state.remaining>.06;jarFoam.position.y=liquidSurface.position.y+.005;
     jarFoam.scale.setScalar(.65+smoothness*.35);
     jarIce.visible=state.iceAdded&&smoothness<.87;for(let i=0;i<jarIce.children.length;i++){const cube=jarIce.children[i],a=i*2.4+state.blendSeconds*5;cube.position.set(Math.cos(a)*.10,.16+i*.043,Math.sin(a)*.10);cube.scale.setScalar(1-smoothness*.8);
-      if(state.lastAction==='ice'&&state.transfer<1){const p=THREE.MathUtils.clamp((state.transfer-i*.035)/.83,0,1),start=lastDragPosition&&lastDragId==='ice'?jar.worldToLocal(lastDragPosition.clone()):jar.worldToLocal(iceBucket.localToWorld(new THREE.Vector3(0,.4,0)));cube.position.copy(start).lerp(new THREE.Vector3(0,.73,0),Math.min(1,p*1.8));if(p>.55)cube.position.lerp(new THREE.Vector3(Math.cos(a)*.1,.16+i*.043,Math.sin(a)*.1),(p-.55)/.45);cube.position.y+=Math.sin(p*Math.PI)*.15;}}
+      if(state.lastAction==='ice'&&state.transfer<1){const p=THREE.MathUtils.clamp((state.transfer-i*.035)/.83,0,1),start=releasedDragOrigins.has('ice')?jar.worldToLocal(releasedDragOrigins.get('ice')!.clone()):jar.worldToLocal(iceBucket.localToWorld(new THREE.Vector3(0,.4,0)));cube.position.copy(start).lerp(new THREE.Vector3(0,.73,0),THREE.MathUtils.smoothstep(p,0,.55));if(p>.55)cube.position.lerp(new THREE.Vector3(Math.cos(a)*.1,.16+i*.043,Math.sin(a)*.1),THREE.MathUtils.smoothstep(p,.55,1));cube.position.y+=Math.sin(p*Math.PI)*.15;cube.rotation.set(i+p*.6,i*.9+p,i*.35+p*.3);}}
     dragVisual.visible=false;ingredientStream.visible=false;for(const bottle of liquids.values())bottle.visible=true;
     if(dragId&&dragPosition&&!['jar','cup'].includes(dragId)){
       populateDrag(dragId,color);dragVisual.visible=true;dragVisual.position.copy(stand.worldToLocal(dragPosition.clone()));dragVisual.rotation.set(0,0,0);if(liquids.has(dragId))liquids.get(dragId)!.visible=false;
     } else if(state.lastAction==='liquid'&&state.transfer<1){
-      const kind=state.liquidType||'water';populateDrag(kind,color);const bottle=liquids.get(kind)!;bottle.visible=false;const p=state.transfer,start=lastDragPosition&&lastDragId===kind?stand.worldToLocal(lastDragPosition.clone()):stand.worldToLocal(bottle.localToWorld(new THREE.Vector3(0,.2,0)));
+      const kind=state.liquidType||'water';populateDrag(kind,color);const bottle=liquids.get(kind)!;bottle.visible=false;const p=state.transfer,start=releasedDragOrigins.has(kind)?stand.worldToLocal(releasedDragOrigins.get(kind)!.clone()):stand.worldToLocal(bottle.localToWorld(new THREE.Vector3(0,.2,0)));
       const pourPosition=stand.worldToLocal(workGroup.localToWorld(new THREE.Vector3(.38,2.38,.75)));
-      dragVisual.visible=true;dragVisual.position.copy(start).lerp(pourPosition,Math.min(1,p*2));dragVisual.position.y+=Math.sin(p*Math.PI)*.12;dragVisual.rotation.set(0,0,-.9*Math.sin(p*Math.PI));
-      if(p>.35&&p<.88){dragVisual.updateWorldMatrix(true,false);const startPoint=stand.worldToLocal(dragVisual.localToWorld(new THREE.Vector3(.03,.29,0))),endPoint=stand.worldToLocal(jar.localToWorld(new THREE.Vector3(0,.23,0))),mid=startPoint.clone().lerp(endPoint,.5);mid.y+=.04;ingredientStream.geometry.dispose();ingredientStream.geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3([startPoint,mid,endPoint]),10,.014,6,false);(ingredientStream.material as THREE.MeshStandardMaterial).color.set(milky?'#f2e7c8':'#dfead7');ingredientStream.visible=true;}
+      const returnPosition=stand.worldToLocal(bottle.localToWorld(new THREE.Vector3())),approach=THREE.MathUtils.smoothstep(p,0,.32),returning=THREE.MathUtils.smoothstep(p,.76,1);
+      dragVisual.visible=true;dragVisual.position.copy(start).lerp(pourPosition,approach).lerp(returnPosition,returning);dragVisual.position.y+=Math.sin(p*Math.PI)*.08;dragVisual.rotation.set(0,0,-.95*THREE.MathUtils.smoothstep(p,.16,.38)*(1-returning));
+
+      if(p>.35&&p<.76){dragVisual.updateWorldMatrix(true,false);const startPoint=stand.worldToLocal(dragVisual.localToWorld(new THREE.Vector3(.03,.48,0))),endPoint=stand.worldToLocal(jar.localToWorld(new THREE.Vector3(0,.23,0))),mid=startPoint.clone().lerp(endPoint,.5);mid.y+=.04;ingredientStream.geometry.dispose();ingredientStream.geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3([startPoint,mid,endPoint]),10,.014,6,false);(ingredientStream.material as THREE.MeshStandardMaterial).color.set(milky?'#f2e7c8':'#dfead7');ingredientStream.visible=true;}
     }
     const fill=THREE.MathUtils.clamp(state.fill,0,1);cupLiquid.visible=fill>.003;cupLiquid.scale.set(1,Math.max(.003,fill),1);cupLiquid.position.y=.025+.185*fill;(cupLiquid.material as THREE.MeshStandardMaterial).color.copy(finalJuice);
-    cupFoam.visible=fill>.05;cupFoam.position.y=.028+.37*fill;cupFoam.scale.setScalar(.7+fill*.3);straw.visible=['ready','serve','react','done'].includes(phase);
+    cupFoam.visible=fill>.05;cupFoam.position.y=.028+.37*fill;cupFoam.scale.setScalar(.7+fill*.3);cupFoam.rotation.y=Math.sin(time*1.7)*.035*state.flow;cupFoam.position.y+=Math.sin(time*13)*Math.min(.007,state.flow*.012);straw.visible=['ready','serve','react','done'].includes(phase);
     pourStream.visible=phase==='pour'&&state.pouringHeld&&state.tilt>.2&&state.flow>.005&&state.remaining>.003;
     (pourStream.material as THREE.MeshStandardMaterial).color.copy(finalJuice);pourStream.scale.set(1,1,1);
     if(pourStream.visible){jar.updateWorldMatrix(true,false);cup.updateWorldMatrix(true,false);const start=stand.worldToLocal(jar.localToWorld(new THREE.Vector3(.32,.63,0))),end=stand.worldToLocal(cup.localToWorld(new THREE.Vector3(0,.035+.37*fill,0))),mid=start.clone().lerp(end,.45);mid.x+=.055;mid.y+=.03;pourStream.geometry.dispose();pourStream.geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3([start,mid,end]),15,.018+Math.min(.012,state.flow*.028),8,false);}

@@ -1,8 +1,8 @@
-# PERAS! — The Hands-On Update
+# PERAS! — The First-Person Update
 
-A locally saved 3D juice stand game in a cheerful miniature Indonesian neighborhood. Version 2 keeps the pastel world and business progression, and replaces timed preparation with direct picking, slicing, dragging, holding, tilting, and serving.
+A locally saved 3D juice stand game in a cheerful miniature Indonesian neighborhood. Version 3 brings the player behind the counter in first person, with labeled ingredient sources, exact visible drop zones, direct drag-and-drop, stable customer queues, and smoother character and workstation animation.
 
-Built with React, TypeScript, Vite, Three.js, and the Web Audio API. The primary camera sits behind the vendor’s shoulder and smoothly approaches the workstation for individual tasks. Free orbit is available in photo mode.
+Built with React, TypeScript, Vite, Three.js, and the Web Audio API. The primary camera stays at the player’s side of the counter, gently turning toward the current task. Articulated hands and first-person forearms follow work gestures. Free orbit is available in photo mode.
 
 ## Run locally
 
@@ -28,12 +28,12 @@ Deploy `dist/` to a static host at the origin root, with an `index.html` fallbac
 
 Open for business and read the customer ticket. Choose the requested recipe and preference before picking the first fruit. Click the order number to expand the compact ticket.
 
-1. **Pick:** click or tap the highlighted fruit in the 3D stand. Mixed recipes require each listed fruit type. The first accepted pick reserves the recipe’s inventory once.
+1. **Pick:** hold the labeled fruit at the ingredient trays, drag it along the guide into the outlined **TALENAN** drop zone, and release inside it. Mixed recipes require each listed fruit type. The first accepted pick reserves the recipe’s inventory once.
 2. **Slice:** swipe across the fruit on the cutting board three times. Very short pointer movements do not count. The knife and separated pieces respond to accepted gestures.
-3. **Load:** drag two grouped fruit portions into the open blender jar. Add ice, unless the drink is ice-free, then drag in water or milk. Each requires its own gesture.
+3. **Load:** drag two grouped fruit portions into the open blender jar. Add ice, unless the drink is ice-free, then drag in water or milk. Each requires its own gesture. The outlined **BLENDER** area turns green when the held item is inside its exact acceptance rectangle. A missed drop returns the material; it does not consume or add anything.
 4. **Blend:** hold the blender’s physical switch, watch the mixture and quality indicator, then release. The ideal blend is around 3–4.5 seconds. Releasing before one second lets you continue blending; holding too long produces an overblended result.
 5. **Pour:** hold the jar and drag to control tilt and flow. Aim for 88–98% cup fill, then release. A small partial pour can be continued; releasing once the cup is at least 40% full presents it for serving. Pouring over the rim produces spills and reduces quality.
-6. **Serve:** drag the finished cup toward the customer. The vendor and customer perform the handoff and reaction. Money is credited once at the reaction checkpoint, then the next customer arrives.
+6. **Serve:** drag the finished cup toward the customer. The vendor and customer perform the handoff and reaction. Money is credited once at the reaction checkpoint. The served customer walks away carrying their cup, the visible next person advances with their existing order, and a distinct newcomer joins the back.
 
 Waiting alone does not pick, cut, load, blend, pour, or serve. Blending advances while its switch is held. Liquid flows during pouring, with a brief stream tail after release. Short pickup, cutting, transfer, handoff, and reaction animations respond to accepted input.
 
@@ -43,7 +43,7 @@ Correct recipes earn the menu price. Blend quality, fill, spills, and preference
 
 | Control | Action |
 | --- | --- |
-| Click / tap a fruit | Pick an ingredient |
+| Hold and drag a fruit into TALENAN | Pick an ingredient |
 | Swipe across the cutting board | Make one cut |
 | Drag portions, ice, water, or milk toward the jar | Load ingredients |
 | Hold the blender switch | Blend until released |
@@ -51,7 +51,7 @@ Correct recipes earn the menu price. Blend quality, fill, spills, and preference
 | Drag the finished cup toward the customer | Serve |
 | **Space** | Open, resume, or perform one assisted pick/cut/load/serve gesture; hold for blending or pouring |
 | **Keyboard & assisted controls** | Show alternative controls; blending/pouring still require a hold and release |
-| Right-drag during play | Peek within the shoulder-camera framing |
+| Right-drag during play | Look around from behind the counter |
 | Scroll during play | Adjust limited zoom |
 | **P** | Enter or exit photo mode |
 | **Esc** | Exit photo mode or close an ordinary panel |
@@ -68,7 +68,7 @@ The existing market, adjustable prices, character customization, stand colors, u
 
 ## Saves and offline play
 
-Progress stays in the current browser’s `localStorage`, for the current origin. Business saves include money, inventory, appearance, upgrades, locations, receipts, settings, and completed-order IDs. Preparation checkpoints retain picked fruit, cuts, grouped loads, blend duration, fill, remaining juice, and spills. Checkpoints save on accepted input and periodically during live simulation.
+Progress stays in the current browser’s `localStorage`, for the current origin. Business saves include money, inventory, appearance, upgrades, locations, receipts, settings, and completed-order IDs. The same-day queue saves customer and order identities so a reload keeps the next people in line. Preparation checkpoints retain picked fruit, cuts, grouped loads, blend duration, fill, remaining juice, and spills. Checkpoints save on accepted input and periodically during live simulation.
 
 Refresh restores progress with held controls released. Existing version-one business saves are preserved. Legacy loaded, blended, and ready checkpoints map to corresponding interactive stages without reserving ingredients twice. Opening another game tab transfers write ownership and pauses the older tab to avoid concurrent progress writes.
 
@@ -91,15 +91,18 @@ With the development server running, open `/dev/gameplay-lab`. This development-
 | `src/main.tsx` | React entry point and production service-worker registration |
 | `src/App.tsx` | Interface, session coordination, reservation, payment, timers, assisted controls, and lab |
 | `src/preparation.ts` | Pure input reducer, held-control simulation, quality, liquid conservation, serialization, and legacy checkpoint recovery |
-| `src/interaction.ts` | Raycasting, captured drags, swipes, target projection, and cancellation |
+| `src/interaction.ts` | Raycasting, shared mesh/label gesture entry, screen-aligned captured drags, exact visible drop bounds, and cancellation |
+| `src/queue.ts` | Stable three-person order queue, distinct arrivals, exact next-person promotion, and reload recovery |
 | `src/engine.ts` | Immutable economy, recipes, inventory, upgrades, events, receipts, and business persistence |
-| `src/GameScene.tsx` | Shoulder camera, contextual framing, gestures, hand/object interaction, lighting, and PNG capture |
+| `src/GameScene.tsx` | First-person camera, projected material/drop guidance, stable customer actors, hand/object interaction, lighting, and PNG capture |
 | `src/characters.ts` | Procedural skinned rig, customization, animation, expressions, grips, and hand reach |
 | `src/world.ts` | Stand, fruit, cut/load states, blender contents, vortex, stream, cup fill, spills, scenery, and upgrades |
 | `src/sound.ts` | Procedural music, tactile effects, and sustained held motor/pour audio |
 | `src/icons.tsx` / `src/style.css` | Local illustrated interface assets and styling |
 | `scripts/test-engine.mjs` | Inventory, economy, progression, persistence, and payout replay tests |
 | `scripts/test-preparation.mjs` | Gesture gates, holds, partial pours, quality, conservation, migration, and reaction checkpoints |
+| `scripts/test-queue.mjs` | Identity promotion, duplicate callbacks, stock shortages, modifiers, repeated payment/reload cycles, and day transitions |
+| `scripts/test-interaction.mjs` | Actual Three ray hits, pointer lifecycle, exact DOM drop bounds, disabled/cancel handling, and drag planes |
 | `scripts/test-sound.mjs` | Audio graph reuse, release envelopes, volume/mute, and cleanup; tests lifecycle rather than perceived sound quality |
 | `scripts/offline.mjs` | Production asset cache and service-worker generation |
 

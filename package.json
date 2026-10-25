@@ -1,13 +1,13 @@
 {
   "name": "peras",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build && node scripts/offline.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node scripts/test-engine.mjs && node scripts/test-preparation.mjs && node scripts/test-sound.mjs"
+    "test": "node scripts/test-engine.mjs && node scripts/test-queue.mjs && node scripts/test-preparation.mjs && node scripts/test-sound.mjs && node scripts/test-interaction.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

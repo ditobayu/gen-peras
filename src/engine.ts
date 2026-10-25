@@ -90,7 +90,8 @@ export interface GameState {
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 const whole = (n: number) => Math.round(n);
-const uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+let fallbackUidSequence = 0;
+const uid = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${(++fallbackUidSequence).toString(36)}-${Math.random().toString(36).slice(2)}`;
 const recipeById = (id: string) => { const recipe = RECIPES.find(r => r.id === id); if (!recipe) throw new Error('Resep tidak ditemukan.'); return recipe; };
 export const formatRupiah = (value: number) => `Rp${Math.round(value).toLocaleString('id-ID')}`;
 export const dailyTarget = (value: number | GameState) => Math.min(20, 8 + (Math.max(1, typeof value === 'number' ? value : value.day) - 1) * 2);
@@ -126,14 +127,15 @@ export function newGame(): GameState {
 }
 
 /** Creates an order without changing state. Persist its ID before beginning preparation. */
-export function makeOrder(state: GameState): Order {
+export function makeOrder(state: GameState, excludedCustomerIds: readonly string[] = []): Order {
   if (state.dayClosed) throw new Error('Warung sudah tutup. Mulai hari baru dulu, yuk!');
   const choices = unlockedRecipes(state).filter(recipe => Object.entries(recipe.ingredients).every(([fruit, amount]) => state.inventory[fruit as FruitId] >= amount!));
   if (!choices.length) throw new Error('Buah habis. Belanja persediaan dulu, yuk!');
   // First-time players meet a friendly mango customer; later arrivals vary naturally.
-  const first = state.totalServed === 0;
+  const first = state.totalServed === 0 && excludedCustomerIds.length === 0;
   const recipe = first ? (choices.find(r => r.id === 'mango') ?? choices[0]) : choices[Math.floor(Math.random() * choices.length)];
-  const roster = CUSTOMERS.slice(0, Math.min(CUSTOMERS.length, 4 + state.day));
+  const roster = CUSTOMERS.slice(0, Math.min(CUSTOMERS.length, 4 + state.day)).filter(customer => !excludedCustomerIds.includes(customer.id));
+  if (!roster.length) throw new Error('Semua pelanggan sedang mengantre.');
   const customer = first ? CUSTOMERS[0] : roster[Math.floor(Math.random() * roster.length)];
   const modifiers = state.day === 1 ? ['Biasa'] : state.day === 2 ? ['Biasa', 'Sedikit gula', 'Es ekstra'] : ['Biasa', 'Sedikit gula', 'Es ekstra', 'Tanpa es', 'Tanpa susu', 'Buah ekstra', 'Gelas besar'];
   const possibleModifiers = modifiers.filter(modifier => Object.entries(recipeIngredients(recipe.id, modifier)).every(([fruit, amount]) => state.inventory[fruit as FruitId] >= amount!));

@@ -18,3 +18,43 @@
 .hands-on .morning-note{padding:13px 16px 15px;background:#fffbeddf;border:1px solid #dedbc3;border-radius:14px;backdrop-filter:blur(7px);box-shadow:0 3px 15px #51442a08}.hands-on .morning-note h1{margin-top:7px}.hands-on.focused .morning-note{padding:10px 13px;max-width:260px}.hands-on.focused .morning-note .daily-goal{display:none}.hands-on.focused .reputation{display:none}@media(max-width:650px){.hands-on .morning-note{padding:8px 10px;max-width:152px}.hands-on.focused .morning-note{display:none}}
 
 .lab-motion-frames{display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:225px;overflow:auto}.lab-motion-frames figure{margin:0}.lab-motion-frames img{display:block;width:100%;border-radius:5px}.lab-motion-frames figcaption{font-size:8px;padding:3px;text-transform:capitalize}
+/* First-person workstation: visible gestures share their exact drop bounds. */
+.first-person.game{min-height:560px}
+.first-person .scene-wrap{inset:80px 0 132px}
+.first-person .world-hints{z-index:2;overflow:hidden}
+.first-person .world-hint{pointer-events:auto;touch-action:none;user-select:none;min-width:100px;min-height:58px;display:flex;flex-direction:column;justify-content:center;border:2px solid #f5e5bd;border-radius:14px;background:#fffcf0ed;padding:10px 13px;color:#385f47;box-shadow:0 4px 0 #5b4d2b18,0 7px 24px #293c2724;cursor:grab;transform-origin:center}
+.first-person .world-hint:after{display:none}
+.first-person .world-hint b{font-size:16px;font-weight:500;line-height:1.2}
+.first-person .world-hint span{font-size:8px;letter-spacing:.5px;color:#786b50;line-height:1.4;margin-top:5px}
+.first-person .world-hint.source:before{content:'✥';position:absolute;top:-13px;left:calc(50% - 12px);display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#537952;color:#fff8de;border:2px solid #f9eac4;font-size:16px}
+.first-person .world-hint.inactive{opacity:.55;pointer-events:none;min-width:73px;min-height:42px;padding:7px 8px;z-index:0}
+.first-person .world-hint.inactive b{font-size:12px}.first-person .world-hint.inactive span,.first-person .world-hint.inactive:before{display:none}
+.first-person .world-hint.grabbed{opacity:.4;cursor:grabbing}
+.first-person .world-hint.destination{min-width:138px;min-height:108px;border:3px dashed #547b4c;background:#eaf2cfb8;box-shadow:inset 0 0 0 5px #faffdf55,0 4px 20px #405b2720;color:#385f37;pointer-events:none;opacity:1}
+.first-person .world-hint.destination b{font-size:18px}.first-person .world-hint.destination span{font-size:8px;color:#4f6739;font-weight:700;max-width:110px;margin:6px auto 0}
+.first-person .world-hint.drop-ready{border-style:solid;background:#b9e29deb;box-shadow:0 0 0 8px #9dcc6b4d,0 5px 26px #305b3240;transform-origin:center}
+.first-person .world-hint.drop-ready span{color:#2d5a35}
+.first-person .drag-route{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.first-person .drag-route path{fill:none;stroke:#ffefb6;stroke-width:4;stroke-linecap:round;stroke-dasharray:8 9;filter:drop-shadow(0 1px 2px #3b512a80);animation:route-flow 1.1s linear infinite}
+@keyframes route-flow{to{stroke-dashoffset:-34}}
+.first-person .drag-ghost{position:absolute;top:0;left:0;padding:8px 13px;border-radius:30px;background:#3c6445;color:#fff7dd;font-size:12px;font-weight:700;box-shadow:0 3px 10px #233e2e33;pointer-events:none;z-index:7;white-space:nowrap}
+.first-person .drop-feedback{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);padding:11px 18px;border-radius:30px;background:#3b6246;color:#fff7df;font-size:11px;box-shadow:0 3px 16px #2c392c30;white-space:nowrap;pointer-events:none;z-index:8}
+.first-person .drop-feedback.missed{background:#775b3f}
+.first-person .morning-note{top:116px;left:95px;max-width:290px;background:#fff9e6db;border:1px solid #e3dcc0;border-radius:14px;padding:13px 16px}
+.first-person .morning-note h1,.first-person.focused .morning-note h1{font-size:23px;margin-top:6px;max-width:260px}
+.first-person .morning-note p,.first-person.focused .morning-note p{font-size:10px;max-width:265px;margin-top:7px;color:#79785b}
+.first-person .morning-note>.eyebrow{font-size:7px;letter-spacing:1.2px}
+.first-person .daily-goal{margin-top:12px}.first-person .reputation{display:none}
+.first-person .queue-strip{left:95px;top:306px;display:flex;flex-direction:column;background:#fff9e7df;border:1px solid #e2dcc1;padding:10px 12px;border-radius:13px;min-width:147px;color:#787d57;pointer-events:none}
+.first-person .queue-strip>span{font-size:7px;font-weight:700;letter-spacing:1.3px;display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:1px dashed #d6cfb0}
+.first-person .queue-strip>span>b{letter-spacing:0;background:#e7edce;border-radius:50%;width:17px;height:17px;display:grid;place-items:center;font-size:9px}
+.first-person .queue-strip>div{display:flex;align-items:center;gap:8px;padding-top:9px;opacity:.7}
+.first-person .queue-strip>div.queue-current{opacity:1;color:#3d6747}
+.first-person .queue-strip i{font-style:normal;width:25px;height:25px;display:grid;place-items:center;border-radius:50%;font-family:Fredoka;color:#fff9e4;border:2px solid #fff9e4}
+.first-person .queue-strip>div>span{font-size:10px;font-weight:700;flex:1}.first-person .queue-strip small{display:block;font-size:7px;font-weight:400;margin-top:2px;color:#959071}
+.first-person .order-ticket{background:#fffdf0f0}.first-person .location-pill{font-size:9px}
+.first-person .world-caption{display:none}.first-person .camera-hint{background:#fff9e4c9;padding:5px 9px;border-radius:20px;font-size:7px;bottom:141px}
+.first-person .juice-bar{left:95px}.first-person .bar-subtitle{font-size:9px}.first-person .bar-top>b{font-size:10px}
+@media(max-width:1100px){.first-person .morning-note{left:76px;top:110px;padding:10px 12px;max-width:240px}.first-person .morning-note h1,.first-person.focused .morning-note h1{font-size:20px}.first-person .morning-note p,.first-person.focused .morning-note p{font-size:9px}.first-person .daily-goal{display:none}.first-person .queue-strip{left:76px;top:234px;min-width:137px}.first-person .world-hint b{font-size:14px}.first-person .world-hint.destination{min-width:120px;min-height:98px}.first-person .world-hint.destination b{font-size:15px}.first-person .world-hint.inactive{min-width:65px}}
+@media(max-width:650px){.first-person.game{min-height:600px}.first-person .scene-wrap{inset:65px 0 154px}.first-person .morning-note{top:109px;left:56px;width:calc(100% - 209px);max-width:none;min-width:130px;padding:9px}.first-person .morning-note>.eyebrow{font-size:5px;letter-spacing:.4px}.first-person .morning-note h1,.first-person.focused .morning-note h1{font-size:16px;max-width:none}.first-person .morning-note p,.first-person.focused .morning-note p{font-size:8px;line-height:1.5;max-width:none}.first-person .queue-strip{top:240px;left:56px;min-width:0;padding:6px 8px;border-radius:9px}.first-person .queue-strip>span{font-size:5px;letter-spacing:.5px}.first-person .queue-strip>span>b{width:14px;height:14px;font-size:7px}.first-person .queue-strip>div{gap:4px;padding-top:6px}.first-person .queue-strip>div>span{font-size:7px}.first-person .queue-strip small{font-size:5px}.first-person .queue-strip i{width:18px;height:18px;font-size:9px}.first-person .queue-strip svg{display:none}.first-person .world-hint{min-width:86px;min-height:48px;padding:8px 9px;border-radius:10px}.first-person .world-hint b{font-size:12px;white-space:normal;max-width:130px}.first-person .world-hint span{font-size:6px;max-width:120px;margin-top:4px}.first-person .world-hint.destination{min-width:104px;min-height:90px}.first-person .world-hint.destination b{font-size:13px}.first-person .world-hint.destination span{font-size:7px;max-width:85px}.first-person .world-hint.inactive{min-width:50px;min-height:32px;padding:5px;max-width:64px}.first-person .world-hint.inactive b{font-size:9px}.first-person .world-hint.source:before{width:20px;height:20px;left:calc(50% - 10px);font-size:13px;top:-11px}.first-person .drag-ghost{font-size:10px;padding:6px 10px}.first-person .drop-feedback{white-space:normal;text-align:center;max-width:85%;width:max-content;font-size:9px;bottom:10px}.first-person .camera-hint{font-size:5px;bottom:166px;right:11px}.first-person .juice-bar{left:11px}.first-person .queue-strip>div:not(.queue-current){display:none}.first-person .bar-subtitle{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.first-person .drag-route path{animation:none}button{transition:none}}
