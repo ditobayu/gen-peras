@@ -157,7 +157,7 @@ export const GameScene=forwardRef<SceneApi,Props>(function GameScene(props,ref){
     halo.visible=!!active&&p.enabled;guides.visible=h.phase==='cut';if(active&&positions[active]){const pos=positions[active].getWorldPosition(new THREE.Vector3());halo.position.copy(pos);halo.position.y+=.03;halo.scale.setScalar(hover===active?1.12:1+Math.sin(t*2)*.025);}
     let sourcePoint:{x:number,y:number}|null=null,destPoint:{x:number,y:number}|null=null;
     for(const [id,node] of hints){
-     const secondary=id===destination,materialSource=h.phase==='load'&&h.loadedPortions===2&&(h.iceAdded||h.modifier==='Tanpa es')&&['water','milk'].includes(id),fruitSource=h.phase==='select'&&id.startsWith('fruit-')&&h.requiredFruits.includes(id.slice(6));
+     const secondary=id===destination,materialSource=h.phase==='load'&&h.loadedPortions===2&&(h.iceAdded||h.modifier==='Tanpa es')&&['water','milk'].includes(id),fruitSource=h.phase==='select'&&id===active;
      const shown=p.enabled&&(id===active||secondary||materialSource||fruitSource);
      node.style.display=shown?'block':'none';if(!shown||!positions[id])continue;
      const projected=interactor.project(positions[id]);if(!projected.visible){node.style.display='none';continue;}
